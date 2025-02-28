@@ -44,13 +44,9 @@ function compareSortedFiles(
         throw new RuntimeException(sprintf('Failed to open output file: %s', $out2Path));
     }
 
-    $readLine = static function ($handle): ?string {
-        $line = fgets($handle);
-        if ($line === false) {
-            return null;
-        }
-
-        return rtrim($line, "\r\n");
+    $readLine = static function ($h): ?string {
+        $line = fgets($h);
+        return $line === false ? null : rtrim($line, "\r\n");
     };
 
     try {
@@ -73,8 +69,13 @@ function compareSortedFiles(
             $cmp = strcmp($line1, $line2);
 
             if ($cmp === 0) {
-                $line1 = $readLine($fh1);
-                $line2 = $readLine($fh2);
+                $val = $line1;
+                while ($line1 !== null && $line1 === $val) {
+                    $line1 = $readLine($fh1);
+                }
+                while ($line2 !== null && $line2 === $val) {
+                    $line2 = $readLine($fh2);
+                }
             } elseif ($cmp < 0) {
                 fwrite($out1, $line1 . PHP_EOL);
                 $line1 = $readLine($fh1);
@@ -91,4 +92,9 @@ function compareSortedFiles(
     }
 }
 
-compareSortedFiles('file1.txt', 'file2.txt', 'only_in_file1.txt', 'only_in_file2.txt');
+compareSortedFiles(
+    'file1.txt',
+    'file2.txt',
+    'only_in_file1.txt',
+    'only_in_file2.txt'
+);
